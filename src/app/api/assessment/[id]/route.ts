@@ -1,27 +1,28 @@
 /**
  * Assessment API Endpoints for a specific assessment
- * 
+ *
  * This file contains the API endpoints for operations on a specific assessment.
  */
 
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { handleApiError } from '@/lib/api-utils';
 
-interface RouteParams {
-  params: {
-    id: string;
-  };
+type Params = {
+  id: string;
 }
 
 /**
  * GET /api/assessment/[id]
  * Returns a specific assessment with its questions
  */
-export async function GET(request: Request, { params }: RouteParams) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Params }
+) {
   try {
     const { id } = params;
-    
+
     const assessment = await prisma.assessment.findUnique({
       where: { id },
       include: {
@@ -37,14 +38,14 @@ export async function GET(request: Request, { params }: RouteParams) {
         }
       }
     });
-    
+
     if (!assessment) {
       return NextResponse.json(
         { error: 'Assessment not found' },
         { status: 404 }
       );
     }
-    
+
     return NextResponse.json(assessment);
   } catch (error) {
     return handleApiError(error, 'Failed to fetch assessment');
@@ -55,11 +56,14 @@ export async function GET(request: Request, { params }: RouteParams) {
  * POST /api/assessment/[id]/submit
  * Submits an assessment attempt
  */
-export async function POST(request: Request, { params }: RouteParams) {
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Params }
+) {
   try {
     const { id } = params;
     const body = await request.json();
-    
+
     // Validate required fields
     if (!body.userId || !body.answers) {
       return NextResponse.json(
@@ -67,9 +71,9 @@ export async function POST(request: Request, { params }: RouteParams) {
         { status: 400 }
       );
     }
-    
+
     const { userId, answers } = body;
-    
+
     // Get the assessment and its questions
     const assessment = await prisma.assessment.findUnique({
       where: { id },
@@ -77,29 +81,29 @@ export async function POST(request: Request, { params }: RouteParams) {
         questions: true
       }
     });
-    
+
     if (!assessment) {
       return NextResponse.json(
         { error: 'Assessment not found' },
         { status: 404 }
       );
     }
-    
+
     // Calculate score
     let correctAnswers = 0;
     const totalQuestions = assessment.questions.length;
-    
+
     for (const question of assessment.questions) {
       const userAnswer = answers[question.id];
       if (userAnswer && userAnswer === question.correct_answer) {
         correctAnswers++;
       }
     }
-    
-    const score = totalQuestions > 0 
-      ? Math.round((correctAnswers / totalQuestions) * 100) 
+
+    const score = totalQuestions > 0
+      ? Math.round((correctAnswers / totalQuestions) * 100)
       : 0;
-    
+
     // Save the assessment result
     const result = await prisma.userAssessment.create({
       data: {
@@ -110,7 +114,7 @@ export async function POST(request: Request, { params }: RouteParams) {
         answers: answers
       }
     });
-    
+
     // Update user progress for the topic
     await prisma.userProgress.upsert({
       where: {
@@ -132,14 +136,14 @@ export async function POST(request: Request, { params }: RouteParams) {
         completed: score >= 70
       }
     });
-    
+
     return NextResponse.json({
       id: result.id,
       score,
-      feedback: score > 80 
-        ? 'Excellent work!' 
-        : score > 60 
-        ? 'Good job, but there\'s room for improvement.' 
+      feedback: score > 80
+        ? 'Excellent work!'
+        : score > 60
+        ? 'Good job, but there\'s room for improvement.'
         : 'You should review the material and try again.',
       completedAt: result.completed_at
     });

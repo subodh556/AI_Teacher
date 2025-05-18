@@ -1,13 +1,13 @@
 /**
  * Code Execution API Endpoint
- * 
+ *
  * This API endpoint proxies requests to the Piston API for code execution.
  * It adds authentication, rate limiting, and error handling.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { executeCode, PistonExecuteResponse } from '@/lib/code-execution';
-import { auth } from '@clerk/nextjs';
+import { currentUser } from '@clerk/nextjs/server';
 import { z } from 'zod';
 
 // Validation schema for code execution request
@@ -29,26 +29,27 @@ const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute in milliseconds
 export async function POST(request: NextRequest) {
   try {
     // Get user ID for rate limiting
-    const { userId } = auth();
+    const user = await currentUser();
+    const userId = user?.id;
     const clientIp = request.headers.get('x-forwarded-for') || 'unknown';
     const rateLimitKey = userId || clientIp;
-    
+
     // Apply rate limiting
     const now = Date.now();
     const userRateLimit = rateLimitMap.get(rateLimitKey);
-    
+
     if (userRateLimit) {
       // Reset count if window has passed
       if (now - userRateLimit.timestamp > RATE_LIMIT_WINDOW) {
         rateLimitMap.set(rateLimitKey, { count: 1, timestamp: now });
-      } 
+      }
       // Increment count if within window
       else if (userRateLimit.count < RATE_LIMIT) {
-        rateLimitMap.set(rateLimitKey, { 
-          count: userRateLimit.count + 1, 
-          timestamp: userRateLimit.timestamp 
+        rateLimitMap.set(rateLimitKey, {
+          count: userRateLimit.count + 1,
+          timestamp: userRateLimit.timestamp
         });
-      } 
+      }
       // Return rate limit error
       else {
         return NextResponse.json(
@@ -60,28 +61,28 @@ export async function POST(request: NextRequest) {
       // First request from this user
       rateLimitMap.set(rateLimitKey, { count: 1, timestamp: now });
     }
-    
+
     // Parse and validate request body
     const body = await request.json();
     const result = ExecuteRequestSchema.safeParse(body);
-    
+
     if (!result.success) {
       return NextResponse.json(
         { error: 'Invalid request', details: result.error.format() },
         { status: 400 }
       );
     }
-    
+
     const { language, code, input, args } = result.data;
-    
+
     // Execute the code
     const executionResult = await executeCode(language, code, input, args);
-    
+
     // Return the execution result
     return NextResponse.json(executionResult);
   } catch (error) {
     console.error('Error in code execution API:', error);
-    
+
     // Return appropriate error response
     if (error instanceof Error) {
       return NextResponse.json(
@@ -89,7 +90,7 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
-    
+
     return NextResponse.json(
       { error: 'An unexpected error occurred' },
       { status: 500 }

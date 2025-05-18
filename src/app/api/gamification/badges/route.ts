@@ -142,10 +142,9 @@ function getDefaultBadges() {
 }
 
 /**
- * POST /api/gamification/badges
- * Creates a new badge (achievement)
+ * Helper function to create a new badge (achievement)
  */
-export async function POST(request: Request) {
+async function handleCreateBadge(request: Request) {
   try {
     const body = await parseRequestBody(request);
 
@@ -187,7 +186,15 @@ export async function POST(request: Request) {
  * POST /api/gamification/badges/award
  * Awards a badge to a user
  */
-export async function award(request: Request) {
+export async function POST(request: Request) {
+  // Check if this is the award endpoint
+  const url = new URL(request.url);
+  if (!url.pathname.endsWith('/award')) {
+    // This is the main badges POST endpoint
+    return handleCreateBadge(request);
+  }
+
+  // This is the award endpoint
   try {
     const body = await parseRequestBody(request);
     const { user_id, badge_id } = body;
@@ -282,10 +289,9 @@ export async function award(request: Request) {
 }
 
 /**
- * POST /api/gamification/badges/check
- * Checks if a user qualifies for any new badges
+ * Helper function to check if a user qualifies for any new badges
  */
-export async function check(request: Request) {
+async function handleCheckBadges(request: Request) {
   try {
     const body = await parseRequestBody(request);
     const { user_id } = body;
@@ -391,4 +397,22 @@ export async function check(request: Request) {
   } catch (error) {
     return handleApiError(error, 'Failed to check badges');
   }
+}
+
+/**
+ * PUT /api/gamification/badges/check
+ * Checks if a user qualifies for any new badges
+ */
+export async function PUT(request: Request) {
+  // Check if this is the check endpoint
+  const url = new URL(request.url);
+  if (url.pathname.endsWith('/check')) {
+    return handleCheckBadges(request);
+  }
+
+  // Return 405 Method Not Allowed for other PUT requests
+  return NextResponse.json(
+    { error: 'Method not allowed' },
+    { status: 405 }
+  );
 }
