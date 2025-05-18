@@ -19,10 +19,10 @@ interface RouteParams {
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: RouteParams }
+  context: { params: RouteParams }
 ) {
   try {
-    const { id } = params;
+    const { id } = context.params;
 
     const assessment = await prisma.assessment.findUnique({
       where: { id },
@@ -59,10 +59,10 @@ export async function GET(
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: RouteParams }
+  context: { params: RouteParams }
 ) {
   try {
-    const { id } = params;
+    const { id } = context.params;
     const body = await request.json();
 
     // Validate required fields
