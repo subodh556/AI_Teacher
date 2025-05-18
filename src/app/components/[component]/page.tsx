@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -72,18 +72,19 @@ const componentData = {
   }
 };
 
-export default function ComponentPage() {
+// Component that uses useSearchParams, wrapped in Suspense
+function ComponentContent() {
   const params = useParams();
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState('preview');
   const componentId = params.component as string;
-  
+
   // Get component data or default to code editor
   const component = componentData[componentId] || componentData['code-editor'];
-  
+
   // Dynamically render the component
   const ComponentToRender = component.component;
-  
+
   return (
     <div className="container mx-auto py-6 space-y-6">
       <Card>
@@ -92,14 +93,14 @@ export default function ComponentPage() {
           <CardDescription>{component.description}</CardDescription>
         </CardHeader>
       </Card>
-      
+
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="preview">Preview</TabsTrigger>
           <TabsTrigger value="usage">Usage</TabsTrigger>
           <TabsTrigger value="api">API</TabsTrigger>
         </TabsList>
-        
+
         <TabsContent value="preview" className="mt-4">
           <Card>
             <CardContent className="pt-6">
@@ -107,7 +108,7 @@ export default function ComponentPage() {
             </CardContent>
           </Card>
         </TabsContent>
-        
+
         <TabsContent value="usage" className="mt-4">
           <Card>
             <CardContent className="pt-6">
@@ -117,7 +118,7 @@ export default function ComponentPage() {
 
 export default function MyComponent() {
   return (
-    <${component.title.replace(/\s/g, '')} 
+    <${component.title.replace(/\s/g, '')}
       ${Object.entries(component.props)
         .map(([key, value]) => `${key}={${typeof value === 'string' ? `"${value}"` : JSON.stringify(value)}}`)
         .join('\n      ')}
@@ -128,7 +129,7 @@ export default function MyComponent() {
             </CardContent>
           </Card>
         </TabsContent>
-        
+
         <TabsContent value="api" className="mt-4">
           <Card>
             <CardContent className="pt-6">
@@ -147,5 +148,20 @@ export default function MyComponent() {
         </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+export default function ComponentPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center h-[calc(100vh-4rem)]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-muted-foreground">Loading component...</p>
+        </div>
+      </div>
+    }>
+      <ComponentContent />
+    </Suspense>
   );
 }

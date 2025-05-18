@@ -1,22 +1,22 @@
 /**
  * Vercel Analytics Configuration
- * 
+ *
  * This file sets up Vercel Analytics for the application.
  * It provides components and utilities for tracking page views and custom events.
  */
 
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, Suspense } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { Analytics as VercelAnalytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 
 /**
- * AnalyticsProvider component that wraps the application with Vercel Analytics
- * and Speed Insights components.
+ * PageViewTracker component that tracks page views
+ * This is separated to be wrapped in Suspense
  */
-export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
+function PageViewTracker() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
@@ -28,9 +28,21 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
     }
   }, [pathname, searchParams]);
 
+  return null;
+}
+
+/**
+ * AnalyticsProvider component that wraps the application with Vercel Analytics
+ * and Speed Insights components.
+ */
+export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
   return (
     <>
       {children}
+      {/* Wrap the component using useSearchParams in Suspense */}
+      <Suspense fallback={null}>
+        <PageViewTracker />
+      </Suspense>
       {/* Vercel Analytics - automatically tracks page views */}
       <VercelAnalytics />
       {/* Vercel Speed Insights - tracks web vitals */}
@@ -41,7 +53,7 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
 
 /**
  * Track a custom event with Vercel Analytics
- * 
+ *
  * @param eventName The name of the event to track
  * @param properties Additional properties to include with the event
  */
