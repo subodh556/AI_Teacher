@@ -1,0 +1,199 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Models based on the ERD in the SSD document
+
+model User {
+  id               String            @id @default(uuid()) @db.Uuid
+  email            String            @unique
+  name             String
+  created_at       DateTime          @default(now()) @db.Timestamptz
+  last_login       DateTime?         @db.Timestamptz
+  preferences      Json?             @default("{}")
+  userProgress     UserProgress[]
+  userAssessments  UserAssessment[]
+  userAchievements UserAchievement[]
+  studyPlans       StudyPlan[]
+  userGoals        UserGoal[]
+  userActivities   UserActivity[]
+  progressMetrics  ProgressMetric[]
+  userStreak       UserStreak?
+  userLevel        UserLevel?
+}
+
+model Topic {
+  id              String         @id @default(uuid()) @db.Uuid
+  name            String
+  description     String
+  parent_id       String?        @db.Uuid
+  parent          Topic?         @relation("TopicToTopic", fields: [parent_id], references: [id])
+  children        Topic[]        @relation("TopicToTopic")
+  difficulty_level Int
+  content         Content[]
+  assessments     Assessment[]
+  userProgress    UserProgress[]
+  userGoals       UserGoal[]
+  userActivities  UserActivity[]
+}
+
+model Content {
+  id               String @id @default(uuid()) @db.Uuid
+  topic_id         String @db.Uuid
+  topic            Topic  @relation(fields: [topic_id], references: [id])
+  title            String
+  content_type     String // text, video, interactive
+  content_data     Json
+  difficulty_level Int
+}
+
+model Assessment {
+  id              String           @id @default(uuid()) @db.Uuid
+  title           String
+  description     String
+  topic_id        String           @db.Uuid
+  topic           Topic            @relation(fields: [topic_id], references: [id])
+  adaptive        Boolean          @default(false)
+  questions       Question[]
+  userAssessments UserAssessment[]
+}
+
+model Question {
+  id              String     @id @default(uuid()) @db.Uuid
+  assessment_id   String     @db.Uuid
+  assessment      Assessment @relation(fields: [assessment_id], references: [id])
+  question_text   String
+  question_type   String     // multiple-choice, coding, short-answer
+  options         Json?
+  correct_answer  String
+  difficulty_level Int
+  explanation     String
+}
+
+model UserProgress {
+  id                String   @id @default(uuid()) @db.Uuid
+  user_id           String   @db.Uuid
+  user              User     @relation(fields: [user_id], references: [id])
+  topic_id          String   @db.Uuid
+  topic             Topic    @relation(fields: [topic_id], references: [id])
+  proficiency_level Int
+  last_interaction  DateTime @default(now()) @db.Timestamptz
+  completed         Boolean  @default(false)
+
+  @@unique([user_id, topic_id])
+}
+
+model UserAssessment {
+  id            String     @id @default(uuid()) @db.Uuid
+  user_id       String     @db.Uuid
+  user          User       @relation(fields: [user_id], references: [id])
+  assessment_id String     @db.Uuid
+  assessment    Assessment @relation(fields: [assessment_id], references: [id])
+  score         Int
+  completed_at  DateTime   @default(now()) @db.Timestamptz
+  answers       Json
+}
+
+model Achievement {
+  id               String            @id @default(uuid()) @db.Uuid
+  name             String
+  description      String
+  criteria         Json
+  icon_url         String
+  userAchievements UserAchievement[]
+}
+
+model UserAchievement {
+  id             String      @id @default(uuid()) @db.Uuid
+  user_id        String      @db.Uuid
+  user           User        @relation(fields: [user_id], references: [id])
+  achievement_id String      @db.Uuid
+  achievement    Achievement @relation(fields: [achievement_id], references: [id])
+  earned_at      DateTime    @default(now()) @db.Timestamptz
+
+  @@unique([user_id, achievement_id])
+}
+
+model StudyPlan {
+  id           String   @id @default(uuid()) @db.Uuid
+  user_id      String   @db.Uuid
+  user         User     @relation(fields: [user_id], references: [id])
+  created_at   DateTime @default(now()) @db.Timestamptz
+  updated_at   DateTime @default(now()) @db.Timestamptz
+  plan_data    Json
+  ai_generated Boolean  @default(false)
+}
+
+model UserGoal {
+  id           String   @id @default(uuid()) @db.Uuid
+  user_id      String   @db.Uuid
+  user         User     @relation(fields: [user_id], references: [id])
+  title        String
+  description  String
+  target_value Int
+  current_value Int      @default(0)
+  goal_type    String   // daily, weekly, monthly, total
+  topic_id     String?  @db.Uuid
+  topic        Topic?   @relation(fields: [topic_id], references: [id])
+  start_date   DateTime @default(now()) @db.Timestamptz
+  end_date     DateTime?
+  completed    Boolean  @default(false)
+  created_at   DateTime @default(now()) @db.Timestamptz
+  updated_at   DateTime @default(now()) @db.Timestamptz
+}
+
+model UserActivity {
+  id           String   @id @default(uuid()) @db.Uuid
+  user_id      String   @db.Uuid
+  user         User     @relation(fields: [user_id], references: [id])
+  activity_type String  // lesson, practice, assessment, etc.
+  activity_data Json
+  topic_id     String?  @db.Uuid
+  topic        Topic?   @relation(fields: [topic_id], references: [id])
+  duration     Int?     // in seconds
+  created_at   DateTime @default(now()) @db.Timestamptz
+}
+
+model ProgressMetric {
+  id           String   @id @default(uuid()) @db.Uuid
+  user_id      String   @db.Uuid
+  user         User     @relation(fields: [user_id], references: [id])
+  metric_type  String   // daily_streak, weekly_progress, topic_proficiency, etc.
+  metric_value Float
+  metric_data  Json?
+  date         DateTime @default(now()) @db.Timestamptz
+}
+
+model UserStreak {
+  id             String   @id @default(uuid()) @db.Uuid
+  user_id        String   @unique @db.Uuid
+  user           User     @relation(fields: [user_id], references: [id])
+  current_streak Int      @default(0)
+  longest_streak Int      @default(0)
+  last_active    DateTime @default(now()) @db.Timestamptz
+  created_at     DateTime @default(now()) @db.Timestamptz
+  updated_at     DateTime @default(now()) @db.Timestamptz
+}
+
+model UserLevel {
+  id              String   @id @default(uuid()) @db.Uuid
+  user_id         String   @unique @db.Uuid
+  user            User     @relation(fields: [user_id], references: [id])
+  current_level   Int      @default(1)
+  experience      Int      @default(0)
+  next_level_exp  Int      @default(100)
+  created_at      DateTime @default(now()) @db.Timestamptz
+  updated_at      DateTime @default(now()) @db.Timestamptz
+}
