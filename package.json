@@ -4,9 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "node scripts/prisma-generate.js && next build",
     "start": "next start",
     "lint": "next lint",
+    "postinstall": "node scripts/prisma-generate.js",
+    "prisma:generate": "prisma generate",
     "setup:gamification": "node scripts/setup-gamification.js",
     "setup:gamification:sql": "node scripts/direct-sql-setup.js"
   },

@@ -33,6 +33,9 @@ coverage/
 # Dependency directories
 node_modules/
 
+# Explicitly include Prisma files
+!prisma/
+
 # Environment files (will be set in Vercel dashboard)
 .env
 .env.*
