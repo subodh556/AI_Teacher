@@ -8,7 +8,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { handleApiError } from '@/lib/api-utils';
 
-type Params = {
+// Define the params interface according to Next.js 15 standards
+interface RouteParams {
   id: string;
 }
 
@@ -18,9 +19,8 @@ type Params = {
  */
 export async function GET(
   request: NextRequest,
-  context: { params: Params }
+  { params }: { params: RouteParams }
 ) {
-  const { params } = context;
   try {
     const { id } = params;
 
@@ -59,9 +59,8 @@ export async function GET(
  */
 export async function POST(
   request: NextRequest,
-  context: { params: Params }
+  { params }: { params: RouteParams }
 ) {
-  const { params } = context;
   try {
     const { id } = params;
     const body = await request.json();
