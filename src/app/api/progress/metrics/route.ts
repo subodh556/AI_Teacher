@@ -18,10 +18,9 @@ import {
 } from '@/lib/validation';
 
 /**
- * GET /api/progress/metrics
- * Returns progress metrics for a user
+ * Helper function to get progress metrics for a user
  */
-export async function GET(request: Request) {
+async function getMetrics(request: Request) {
   try {
     const params = extractQueryParams(request, ['user_id', 'metric_type', 'start_date', 'end_date']);
     const { user_id, metric_type, start_date, end_date } = params;
@@ -44,11 +43,11 @@ export async function GET(request: Request) {
 
     if (start_date || end_date) {
       where.date = {};
-      
+
       if (start_date) {
         where.date.gte = new Date(start_date as string);
       }
-      
+
       if (end_date) {
         where.date.lte = new Date(end_date as string);
       }
@@ -88,10 +87,9 @@ export async function POST(request: Request) {
 }
 
 /**
- * GET /api/progress/metrics/summary
- * Returns a summary of progress metrics for a user
+ * Helper function to get a summary of progress metrics for a user
  */
-export async function summary(request: Request) {
+async function getMetricsSummary(request: Request) {
   try {
     const params = extractQueryParams(request, ['user_id']);
     const { user_id } = params;
@@ -148,10 +146,9 @@ export async function summary(request: Request) {
 }
 
 /**
- * GET /api/progress/metrics/strengths-weaknesses
- * Returns strengths and weaknesses for a user based on progress metrics
+ * Helper function to get strengths and weaknesses for a user
  */
-export async function strengthsWeaknesses(request: Request) {
+async function getStrengthsWeaknesses(request: Request) {
   try {
     const params = extractQueryParams(request, ['user_id']);
     const { user_id } = params;
@@ -237,4 +234,23 @@ export async function strengthsWeaknesses(request: Request) {
   } catch (error) {
     return handleApiError(error, 'Failed to fetch strengths and weaknesses');
   }
+}
+
+/**
+ * GET handler for all metrics endpoints
+ */
+export async function GET(request: Request) {
+  // Check which endpoint is being requested
+  const url = new URL(request.url);
+
+  if (url.pathname.endsWith('/summary')) {
+    return getMetricsSummary(request);
+  }
+
+  if (url.pathname.endsWith('/strengths-weaknesses')) {
+    return getStrengthsWeaknesses(request);
+  }
+
+  // Default metrics endpoint
+  return getMetrics(request);
 }

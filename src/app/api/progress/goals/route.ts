@@ -86,7 +86,8 @@ export async function POST(request: Request) {
  * PATCH /api/progress/goals/[id]
  * Updates a user goal
  */
-export async function PATCH(request: Request, { params }: { params: { id: string } }) {
+export async function PATCH(request: Request, context: { params: { id: string } }) {
+  const { params } = context;
   try {
     const { id } = params;
     const body = await parseRequestBody(request);
@@ -117,7 +118,8 @@ export async function PATCH(request: Request, { params }: { params: { id: string
  * DELETE /api/progress/goals/[id]
  * Deletes a user goal
  */
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, context: { params: { id: string } }) {
+  const { params } = context;
   try {
     const { id } = params;
 

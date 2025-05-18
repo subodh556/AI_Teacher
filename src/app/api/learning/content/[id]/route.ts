@@ -18,8 +18,9 @@ type Params = {
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Params }
+  context: { params: Params }
 ) {
+  const { params } = context;
   try {
     const { id } = params;
 
@@ -55,8 +56,9 @@ export async function GET(
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: Params }
+  context: { params: Params }
 ) {
+  const { params } = context;
   try {
     const { id } = params;
     const body = await request.json();

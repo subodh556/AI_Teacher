@@ -18,10 +18,9 @@ import {
 } from '@/lib/validation';
 
 /**
- * GET /api/progress
- * Returns user progress
+ * Helper function to get user progress
  */
-export async function GET(request: Request) {
+async function getProgress(request: Request) {
   try {
     const params = extractQueryParams(request, ['user_id']);
     const { user_id } = params;
@@ -105,10 +104,24 @@ export async function POST(request: Request) {
 }
 
 /**
- * GET /api/progress/summary
- * Returns a summary of user progress across all topics
+ * GET /api/progress
+ * Returns user progress or summary based on the endpoint
  */
-export async function summary(request: Request) {
+export async function GET(request: Request) {
+  // Check if this is the summary endpoint
+  const url = new URL(request.url);
+  if (url.pathname.endsWith('/summary')) {
+    return getSummary(request);
+  }
+
+  // This is the main progress endpoint
+  return getProgress(request);
+}
+
+/**
+ * Helper function to get a summary of user progress across all topics
+ */
+async function getSummary(request: Request) {
   try {
     const params = extractQueryParams(request, ['user_id']);
     const { user_id } = params;
